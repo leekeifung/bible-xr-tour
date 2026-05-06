@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <title>Daniel 2 - Statue Dream | XR Blocks Bible Tour</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+    <link type="text/css" rel="stylesheet" href="https://xrblocks.github.io/css/xr.css" />
+    <script>
+      window.litDisableBundleWarning = true;
+    </script>
+    <script type="importmap">
+      {
+        "imports": {
+          "three": "https://cdn.jsdelivr.net/npm/three@0.182.0/build/three.module.js",
+          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.182.0/examples/jsm/",
+          "troika-three-text": "https://cdn.jsdelivr.net/gh/protectwise/troika@028b81cf308f0f22e5aa8e78196be56ec1997af5/packages/troika-three-text/src/index.js",
+          "troika-three-utils": "https://cdn.jsdelivr.net/gh/protectwise/troika@v0.52.4/packages/troika-three-utils/src/index.js",
+          "troika-worker-utils": "https://cdn.jsdelivr.net/gh/protectwise/troika@v0.52.4/packages/troika-worker-utils/src/index.js",
+          "bidi-js": "https://esm.sh/bidi-js@%5E1.0.2?target=es2022",
+          "webgl-sdf-generator": "https://esm.sh/webgl-sdf-generator@1.1.1/es2022/webgl-sdf-generator.mjs",
+          "lit": "https://cdn.jsdelivr.net/gh/lit/dist@3/core/lit-core.min.js",
+          "lit/": "https://esm.run/lit@3/",
+          "xrblocks": "https://cdn.jsdelivr.net/npm/xrblocks@0.10.0/build/xrblocks.js",
+          "xrblocks/addons/": "https://cdn.jsdelivr.net/npm/xrblocks@0.10.0/build/addons/"
+        }
+      }
+    </script>
+  </head>
+
+  <body>
+    <script type="module">
+      import 'xrblocks/addons/simulator/SimulatorAddons.js';
+      import * as THREE from 'three';
+      import * as xb from 'xrblocks';
+
+      const BIBLE_TEXT = `Daniel 2:31-36 (The Dream)
+
+31 “You, O king, were watching as a great statue—one of impressive size and extraordinary brightness—was standing before you. Its appearance caused alarm. 
+32 As for that statue, its head was of fine gold, its chest and arms were of silver, its belly and thighs were of bronze. 
+33 Its legs were of iron; its feet were partly of iron and partly of clay. 
+34 You were watching as a stone was cut out, but not by human hands. It struck the statue on its iron and clay feet, breaking them in pieces. 
+35 Then the iron, clay, bronze, silver, and gold were broken in pieces without distinction and became like chaff from the summer threshing floors that the wind carries away. Not a trace of them could be found. But the stone that struck the statue became a large mountain that filled the entire earth. 
+36 This was the dream. Now we will set forth before the king its interpretation."
+
+Daniel 2:37-49 (The Interpretation)
+
+37 “You, O king, are the king of kings. The God of heaven has granted you sovereignty, power, strength, and honor. 
+38 Wherever human beings, wild animals, and birds of the sky live—he has given them into your power. He has given you authority over them all. You are the head of gold. 
+39 Now after you another kingdom will arise, one inferior to yours. Then a third kingdom, one of bronze, will rule in all the earth. 
+40 Then there will be a fourth kingdom, one strong like iron. Just like iron breaks in pieces and shatters everything, and as iron breaks in pieces all of these metals, so it will break in pieces and crush the others. 
+41 In that you were seeing feet and toes partly of wet clay and partly of iron, so this will be a divided kingdom. Some of the strength of iron will be in it, for you saw iron mixed with wet clay. 
+42 In that the toes of the feet were partly of iron and partly of clay, the latter stages of this kingdom will be partly strong and partly fragile. 
+43 And in that you saw iron mixed with wet clay, so people will be mixed with one another without adhering to one another, just as iron does not mix with clay. 
+44 In the days of those kings the God of heaven will raise up an everlasting kingdom that will not be destroyed and a kingdom that will not be left to another people. It will break in pieces and bring about the demise of all these kingdoms. But it will stand forever. 
+45 You saw that a stone was cut from a mountain, but not by human hands; it smashed the iron, bronze, clay, silver, and gold into pieces. The great God has made known to the king what will occur in the future. The dream is certain, and its interpretation is reliable.” 
+46 Then King Nebuchadnezzar bowed down with his face to the ground and paid homage to Daniel. He gave orders to offer sacrifice and incense to him. 
+47 The king replied to Daniel, “Certainly your God is a God of gods and Lord of kings and revealer of mysteries, for you were able to reveal this mystery!” 
+48 Then the king elevated Daniel to high position and bestowed on him many marvelous gifts. He granted him authority over the entire province of Babylon and made him the main prefect over all the wise men of Babylon. 
+49 And at Daniel’s request, the king appointed Shadrach, Meshach, and Abednego over the administration of the province of Babylon. Daniel himself served in the king’s court.`;
+
+      /**
+       * Bible Tour Script representing Daniel 2
+       */
+      class BibleTourScript extends xb.Script {
+        constructor() {
+          super();
+          this.animState = 0; // 0: Idle, 1: Smashing, 2: Mountain, 3: Resetting
+          this.stoneInitialPos = new THREE.Vector3(1.5, 2.5, -1.0);
+          this.stoneTargetPos = new THREE.Vector3(0.5, 0.2, -2.0); // Aiming at feet
+          this.statueInitialScale = new THREE.Vector3(1, 1, 1);
+        }
+
+        init() {
+          // 1. Setup Lighting
+          this.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
+          const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
+          dirLight.position.set(2, 5, 2);
+          this.add(dirLight);
+
+          // 2. Setup Statue
+          this.createStatue();
+
+          // 3. Setup Stone
+          this.createStone();
+
+          // 4. Setup Spatial UI
+          this.createUI();
+        }
+
+        createStatue() {
+          this.statueGroup = new THREE.Group();
+          
+          // Enhanced Materials
+          const goldMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15 });
+          const silverMat = new THREE.MeshStandardMaterial({ color: 0xE0E0E0, metalness: 0.9, roughness: 0.2 });
+          const bronzeMat = new THREE.MeshStandardMaterial({ color: 0xCD7F32, metalness: 0.8, roughness: 0.3 });
+          const ironMat = new THREE.MeshStandardMaterial({ color: 0x434B4D, metalness: 0.7, roughness: 0.4 });
+          const clayIronMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, metalness: 0.3, roughness: 0.8 }); // Mixed earthy tone
+
+          // --- Head & Neck (Gold) ---
+          const headGroup = new THREE.Group();
+          headGroup.position.y = 1.7;
+          
+          const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 32, 32), goldMat);
+          head.position.y = 0.15;
+          
+          const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.1, 16), goldMat);
+          
+          const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.08, 16), goldMat);
+          crown.position.y = 0.24;
+          
+          headGroup.add(head, neck, crown);
+          this.statueGroup.add(headGroup);
+
+          // --- Chest & Arms (Silver) ---
+          const chestGroup = new THREE.Group();
+          chestGroup.position.y = 1.35;
+          
+          // Torso upper
+          const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.4, 32), silverMat);
+          chest.scale.set(1, 1, 0.6); // Flatten chest depth
+          chestGroup.add(chest);
+
+          // Arms
+          const armGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.35, 16);
+          const jointGeo = new THREE.SphereGeometry(0.07, 16, 16);
+          
+          const leftArm = new THREE.Group();
+          leftArm.position.set(-0.3, 0.1, 0);
+          leftArm.rotation.z = Math.PI / 8;
+          const lShoulder = new THREE.Mesh(jointGeo, silverMat);
+          const lBicep = new THREE.Mesh(armGeo, silverMat);
+          lBicep.position.y = -0.175;
+          leftArm.add(lShoulder, lBicep);
+          
+          const rightArm = new THREE.Group();
+          rightArm.position.set(0.3, 0.1, 0);
+          rightArm.rotation.z = -Math.PI / 8;
+          const rShoulder = new THREE.Mesh(jointGeo, silverMat);
+          const rBicep = new THREE.Mesh(armGeo, silverMat);
+          rBicep.position.y = -0.175;
+          rightArm.add(rShoulder, rBicep);
+
+          chestGroup.add(leftArm, rightArm);
+          this.statueGroup.add(chestGroup);
+
+          // --- Belly & Thighs (Bronze) ---
+          const bellyGroup = new THREE.Group();
+          bellyGroup.position.y = 0.95;
+          
+          // Lower torso / Skirt
+          const belly = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.4, 32), bronzeMat);
+          belly.scale.set(1, 1, 0.7);
+          bellyGroup.add(belly);
+
+          // Thighs
+          const thighGeo = new THREE.CylinderGeometry(0.08, 0.06, 0.4, 16);
+          const lThigh = new THREE.Mesh(thighGeo, bronzeMat);
+          lThigh.position.set(-0.12, -0.3, 0);
+          const rThigh = new THREE.Mesh(thighGeo, bronzeMat);
+          rThigh.position.set(0.12, -0.3, 0);
+          bellyGroup.add(lThigh, rThigh);
+          
+          this.statueGroup.add(bellyGroup);
+
+          // --- Legs (Iron) ---
+          const legGroup = new THREE.Group();
+          legGroup.position.y = 0.45;
+          
+          const calfGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.4, 16);
+          const kneeGeo = new THREE.SphereGeometry(0.065, 16, 16);
+
+          const lKnee = new THREE.Mesh(kneeGeo, ironMat);
+          lKnee.position.set(-0.12, 0.2, 0);
+          const lCalf = new THREE.Mesh(calfGeo, ironMat);
+          lCalf.position.set(-0.12, 0, 0);
+
+          const rKnee = new THREE.Mesh(kneeGeo, ironMat);
+          rKnee.position.set(0.12, 0.2, 0);
+          const rCalf = new THREE.Mesh(calfGeo, ironMat);
+          rCalf.position.set(0.12, 0, 0);
+
+          legGroup.add(lKnee, lCalf, rKnee, rCalf);
+          this.statueGroup.add(legGroup);
+
+          // --- Feet (Iron and Clay) ---
+          const feetGroup = new THREE.Group();
+          feetGroup.position.y = 0.1;
+          
+          const footGeo = new THREE.BoxGeometry(0.1, 0.1, 0.2);
+          footGeo.translate(0, -0.05, 0.05); // Shift origin to the heel
+
+          const lFoot = new THREE.Mesh(footGeo, clayIronMat);
+          lFoot.position.set(-0.12, 0.1, -0.05);
+          const rFoot = new THREE.Mesh(footGeo, clayIronMat);
+          rFoot.position.set(0.12, 0.1, -0.05);
+
+          feetGroup.add(lFoot, rFoot);
+          this.statueGroup.add(feetGroup);
+
+          // Position Statue
+          this.statueGroup.position.set(0.5, 0, -2.0); // Placed slightly to the right
+          this.add(this.statueGroup);
+        }
+
+        createStone() {
+          const stoneMat = new THREE.MeshStandardMaterial({ color: 0x888888, roughness: 1.0 });
+          this.stone = new THREE.Mesh(new THREE.DodecahedronGeometry(0.15, 1), stoneMat);
+          this.stone.position.copy(this.stoneInitialPos);
+          this.add(this.stone);
+        }
+
+        createUI() {
+          // Spatial Panel on the left side
+          const panel = new xb.SpatialPanel({
+            width: 1.8,
+            height: 1.4,
+            backgroundColor: '#1a1a1add',
+            useDefaultPosition: false
+          });
+          panel.position.set(-1.1, 1.3, -1.8);
+          panel.rotation.y = Math.PI / 8; // Angle slightly towards user
+          this.add(panel);
+
+          const grid = panel.addGrid();
+
+          // Text Area (Scrollable to accommodate interpretation)
+          const textRow = grid.addRow({ weight: 0.85 });
+          const textView = new xb.ScrollingTroikaTextView({
+            text: BIBLE_TEXT,
+            fontSize: 0.045,
+            fontColor: '#ffffff',
+            textAlign: 'left'
+          });
+          textRow.add(textView);
+
+          // Controls Area
+          const ctrlRow = grid.addRow({ weight: 0.15 });
+          
+          const smashBtn = ctrlRow.addCol({ weight: 0.5 }).addTextButton({
+            text: 'Trigger Prophecy',
+            fontSize: 0.08,
+            backgroundColor: '#8B0000',
+            fontColor: '#ffffff'
+          });
+          
+          const resetBtn = ctrlRow.addCol({ weight: 0.5 }).addTextButton({
+            text: 'Reset Vision',
+            fontSize: 0.08,
+            backgroundColor: '#4285F4',
+            fontColor: '#ffffff'
+          });
+          
+          // Back Button to return to landing page
+          const backBtnRow = grid.addRow({ weight: 0.1 });
+          const backBtn = backBtnRow.addCol({ weight: 1.0 }).addTextButton({
+            text: 'Back to Menu',
+            fontSize: 0.06,
+            backgroundColor: '#333333',
+            fontColor: '#ffffff'
+          });
+
+          // Bind Events
+          smashBtn.onTriggered = () => {
+            if (this.animState === 0) this.animState = 1;
+          };
+
+          resetBtn.onTriggered = () => {
+            this.animState = 3;
+          };
+          
+          backBtn.onTriggered = () => {
+             window.location.href = 'index.html';
+          };
+        }
+
+        update() {
+          const dt = xb.getDeltaTime();
+          const speed = 2.0;
+
+          if (this.animState === 1) {
+            // Stone flying towards feet
+            this.stone.position.lerp(this.stoneTargetPos, speed * dt);
+            this.stone.rotation.x += 5 * dt;
+            this.stone.rotation.y += 5 * dt;
+
+            // Check distance to feet
+            if (this.stone.position.distanceTo(this.stoneTargetPos) < 0.1) {
+              this.animState = 2; // Impact! Transition to Mountain state
+            }
+          } 
+          else if (this.animState === 2) {
+            // Statue crumbles to dust (shrinks)
+            if (this.statueGroup.scale.x > 0.01) {
+              this.statueGroup.scale.lerp(new THREE.Vector3(0, 0, 0), speed * 3 * dt);
+            } else {
+              this.statueGroup.visible = false;
+            }
+
+            // Stone grows into a mountain
+            const mountainScale = new THREE.Vector3(15, 15, 15);
+            this.stone.scale.lerp(mountainScale, speed * 0.5 * dt);
+            
+            // Move stone to center to fill earth
+            const mountainPos = new THREE.Vector3(0, 0, -3.0);
+            this.stone.position.lerp(mountainPos, speed * 0.5 * dt);
+          }
+          else if (this.animState === 3) {
+            // Fast reset
+            this.statueGroup.visible = true;
+            this.statueGroup.scale.lerp(this.statueInitialScale, speed * 4 * dt);
+            this.stone.scale.lerp(new THREE.Vector3(1, 1, 1), speed * 4 * dt);
+            this.stone.position.lerp(this.stoneInitialPos, speed * 4 * dt);
+            
+            if (this.statueGroup.scale.x > 0.99 && this.stone.position.distanceTo(this.stoneInitialPos) < 0.1) {
+              this.animState = 0; // Ready again
+            }
+          }
+        }
+      }
+
+      document.addEventListener('DOMContentLoaded', function () {
+        const options = new xb.Options();
+        options.enableUI();
+        xb.add(new BibleTourScript());
+        xb.init(options);
+      });
+
+    </script>
+  </body>
+</html>
