@@ -32,14 +32,14 @@
       import * as THREE from 'three';
       import * as xb from 'xrblocks';
 
-      const BIBLE_TEXT = `Daniel 2:31-36
-
+      const BIBLE_TEXT = `Daniel 2:31-36 (The Dream)
 31 「你，王啊，你正觀看，看哪，有一個很大的像，這像甚高，極其光耀，立在你面前，形狀非常可怕。 
 32 這像的頭是純金的，胸膛和膀臂是銀的，腹部和腰是銅的， 
 33 腿是鐵的，腳是半鐵半泥的。 
 34 你正觀看，見有一塊非人手鑿出來的石頭打在它半鐵半泥的腳上，把腳砸碎； 
 35 於是鐵、泥、銅、銀、金都一同砸得粉碎，如夏天禾場上的糠秕，被風吹散，無處可尋。打碎這像的石頭成了一座大山，覆蓋全地。 
-36 「這就是那夢；我們要在王面前講解那夢。 `;
+36 「這就是那夢；我們要在王面前講解那夢。
+`;
 
       /**
        * Bible Tour Script representing Daniel 2
@@ -56,7 +56,7 @@
         init() {
           // 1. Setup Lighting
           this.add(new THREE.HemisphereLight(0xffffff, 0x444444, 2));
-          const dirLight = new THREE.DirectionalLight(0xffffff, 1.5);
+          const dirLight = new THREE.DirectionalLight(0xffffff, 2.0);
           dirLight.position.set(2, 5, 2);
           this.add(dirLight);
 
@@ -73,41 +73,113 @@
         createStatue() {
           this.statueGroup = new THREE.Group();
           
-          // Head of Gold
-          const headMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 0.8, roughness: 0.2 });
-          const head = new THREE.Mesh(new THREE.SphereGeometry(0.15, 32, 32), headMat);
-          head.position.y = 1.35;
-          this.statueGroup.add(head);
+          // Enhanced Materials
+          const goldMat = new THREE.MeshStandardMaterial({ color: 0xFFD700, metalness: 1.0, roughness: 0.15 });
+          const silverMat = new THREE.MeshStandardMaterial({ color: 0xE0E0E0, metalness: 0.9, roughness: 0.2 });
+          const bronzeMat = new THREE.MeshStandardMaterial({ color: 0xCD7F32, metalness: 0.8, roughness: 0.3 });
+          const ironMat = new THREE.MeshStandardMaterial({ color: 0x434B4D, metalness: 0.7, roughness: 0.4 });
+          const clayIronMat = new THREE.MeshStandardMaterial({ color: 0x8B5A2B, metalness: 0.3, roughness: 0.8 }); // Mixed earthy tone
 
-          // Chest/Arms of Silver
-          const chestMat = new THREE.MeshStandardMaterial({ color: 0xC0C0C0, metalness: 0.7, roughness: 0.3 });
-          const chest = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.3, 0.2), chestMat);
-          chest.position.y = 1.05;
-          this.statueGroup.add(chest);
+          // --- Head & Neck (Gold) ---
+          const headGroup = new THREE.Group();
+          headGroup.position.y = 1.7;
+          
+          const head = new THREE.Mesh(new THREE.SphereGeometry(0.12, 32, 32), goldMat);
+          head.position.y = 0.15;
+          
+          const neck = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.05, 0.1, 16), goldMat);
+          
+          const crown = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.12, 0.08, 16), goldMat);
+          crown.position.y = 0.24;
+          
+          headGroup.add(head, neck, crown);
+          this.statueGroup.add(headGroup);
 
-          // Belly/Thighs of Bronze
-          const bellyMat = new THREE.MeshStandardMaterial({ color: 0xCD7F32, metalness: 0.6, roughness: 0.4 });
-          const belly = new THREE.Mesh(new THREE.BoxGeometry(0.35, 0.3, 0.2), bellyMat);
-          belly.position.y = 0.75;
-          this.statueGroup.add(belly);
+          // --- Chest & Arms (Silver) ---
+          const chestGroup = new THREE.Group();
+          chestGroup.position.y = 1.35;
+          
+          // Torso upper
+          const chest = new THREE.Mesh(new THREE.CylinderGeometry(0.25, 0.2, 0.4, 32), silverMat);
+          chest.scale.set(1, 1, 0.6); // Flatten chest depth
+          chestGroup.add(chest);
 
-          // Legs of Iron
-          const legMat = new THREE.MeshStandardMaterial({ color: 0x434B4D, metalness: 0.5, roughness: 0.5 });
-          const legGeo = new THREE.CylinderGeometry(0.08, 0.08, 0.4, 16);
-          const leftLeg = new THREE.Mesh(legGeo, legMat);
-          leftLeg.position.set(-0.1, 0.4, 0);
-          const rightLeg = new THREE.Mesh(legGeo, legMat);
-          rightLeg.position.set(0.1, 0.4, 0);
-          this.statueGroup.add(leftLeg, rightLeg);
+          // Arms
+          const armGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.35, 16);
+          const jointGeo = new THREE.SphereGeometry(0.07, 16, 16);
+          
+          const leftArm = new THREE.Group();
+          leftArm.position.set(-0.3, 0.1, 0);
+          leftArm.rotation.z = Math.PI / 8;
+          const lShoulder = new THREE.Mesh(jointGeo, silverMat);
+          const lBicep = new THREE.Mesh(armGeo, silverMat);
+          lBicep.position.y = -0.175;
+          leftArm.add(lShoulder, lBicep);
+          
+          const rightArm = new THREE.Group();
+          rightArm.position.set(0.3, 0.1, 0);
+          rightArm.rotation.z = -Math.PI / 8;
+          const rShoulder = new THREE.Mesh(jointGeo, silverMat);
+          const rBicep = new THREE.Mesh(armGeo, silverMat);
+          rBicep.position.y = -0.175;
+          rightArm.add(rShoulder, rBicep);
 
-          // Feet of Iron and Clay
-          const feetMat = new THREE.MeshStandardMaterial({ color: 0x8B4513, metalness: 0.1, roughness: 0.9 });
-          const feetGeo = new THREE.BoxGeometry(0.12, 0.1, 0.15);
-          const leftFoot = new THREE.Mesh(feetGeo, feetMat);
-          leftFoot.position.set(-0.1, 0.15, 0.02);
-          const rightFoot = new THREE.Mesh(feetGeo, feetMat);
-          rightFoot.position.set(0.1, 0.15, 0.02);
-          this.statueGroup.add(leftFoot, rightFoot);
+          chestGroup.add(leftArm, rightArm);
+          this.statueGroup.add(chestGroup);
+
+          // --- Belly & Thighs (Bronze) ---
+          const bellyGroup = new THREE.Group();
+          bellyGroup.position.y = 0.95;
+          
+          // Lower torso / Skirt
+          const belly = new THREE.Mesh(new THREE.CylinderGeometry(0.2, 0.22, 0.4, 32), bronzeMat);
+          belly.scale.set(1, 1, 0.7);
+          bellyGroup.add(belly);
+
+          // Thighs
+          const thighGeo = new THREE.CylinderGeometry(0.08, 0.06, 0.4, 16);
+          const lThigh = new THREE.Mesh(thighGeo, bronzeMat);
+          lThigh.position.set(-0.12, -0.3, 0);
+          const rThigh = new THREE.Mesh(thighGeo, bronzeMat);
+          rThigh.position.set(0.12, -0.3, 0);
+          bellyGroup.add(lThigh, rThigh);
+          
+          this.statueGroup.add(bellyGroup);
+
+          // --- Legs (Iron) ---
+          const legGroup = new THREE.Group();
+          legGroup.position.y = 0.45;
+          
+          const calfGeo = new THREE.CylinderGeometry(0.06, 0.05, 0.4, 16);
+          const kneeGeo = new THREE.SphereGeometry(0.065, 16, 16);
+
+          const lKnee = new THREE.Mesh(kneeGeo, ironMat);
+          lKnee.position.set(-0.12, 0.2, 0);
+          const lCalf = new THREE.Mesh(calfGeo, ironMat);
+          lCalf.position.set(-0.12, 0, 0);
+
+          const rKnee = new THREE.Mesh(kneeGeo, ironMat);
+          rKnee.position.set(0.12, 0.2, 0);
+          const rCalf = new THREE.Mesh(calfGeo, ironMat);
+          rCalf.position.set(0.12, 0, 0);
+
+          legGroup.add(lKnee, lCalf, rKnee, rCalf);
+          this.statueGroup.add(legGroup);
+
+          // --- Feet (Iron and Clay) ---
+          const feetGroup = new THREE.Group();
+          feetGroup.position.y = 0.1;
+          
+          const footGeo = new THREE.BoxGeometry(0.1, 0.1, 0.2);
+          footGeo.translate(0, -0.05, 0.05); // Shift origin to the heel
+
+          const lFoot = new THREE.Mesh(footGeo, clayIronMat);
+          lFoot.position.set(-0.12, 0.1, -0.05);
+          const rFoot = new THREE.Mesh(footGeo, clayIronMat);
+          rFoot.position.set(0.12, 0.1, -0.05);
+
+          feetGroup.add(lFoot, rFoot);
+          this.statueGroup.add(feetGroup);
 
           // Position Statue
           this.statueGroup.position.set(0.5, 0, -2.0); // Placed slightly to the right
@@ -124,19 +196,19 @@
         createUI() {
           // Spatial Panel on the left side
           const panel = new xb.SpatialPanel({
-            width: 1.6,
-            height: 1.2,
+            width: 1.8,
+            height: 1.4,
             backgroundColor: '#1a1a1add',
             useDefaultPosition: false
           });
-          panel.position.set(-1.0, 1.2, -1.8);
+          panel.position.set(-1.1, 1.3, -1.8);
           panel.rotation.y = Math.PI / 8; // Angle slightly towards user
           this.add(panel);
 
           const grid = panel.addGrid();
 
-          // Text Area
-          const textRow = grid.addRow({ weight: 0.8 });
+          // Text Area (Scrollable to accommodate interpretation)
+          const textRow = grid.addRow({ weight: 0.85 });
           const textView = new xb.ScrollingTroikaTextView({
             text: BIBLE_TEXT,
             fontSize: 0.045,
@@ -146,7 +218,7 @@
           textRow.add(textView);
 
           // Controls Area
-          const ctrlRow = grid.addRow({ weight: 0.2 });
+          const ctrlRow = grid.addRow({ weight: 0.15 });
           
           const smashBtn = ctrlRow.addCol({ weight: 0.5 }).addTextButton({
             text: 'Trigger Prophecy',
